@@ -3,6 +3,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+// Some stuff is missing here
+
 int main (int argc, char* argv[]) 
 {
 	if (argc < 3) 
