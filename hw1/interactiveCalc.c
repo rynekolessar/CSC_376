@@ -97,15 +97,15 @@ void onNCurses()
 	scrollok(answerWindow,TRUE);
 
 	/*-------------------------------------------------------------------------*
-	*---									---*
-	*---		interactiveCalc.c					---*
-	*---									---*
-	*---	  An interactive calculator.					---*
-	*---									---*
+	*---																	---*
+	*---		interactiveCalc.c											---*
+	*---																	---*
+	*---	  An interactive calculator.									---*
+	*---																	---*
 	*---	----	----	----	----	----	----	----	----	---*
-	*---									---*
-	*---	Version 1a		2020 January 8		Joseph Phillips	---*
-	*---									---*
+	*---																	---*
+	*---	Version 1a		2020 January 8		Joseph Phillips				---*
+	*---																	---*
 	*-------------------------------------------------------------------------*/
 
 	//
