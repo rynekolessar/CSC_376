@@ -69,6 +69,11 @@ int			shouldRun		= 1;
 int			hasChildStopped	= 0;
 //  YOUR CODE HERE: add some global variable(s)
 
+int pfd[2];
+int cfd[2];
+
+char buffer[BUFFER_LEN];
+
 
 //---												---//
 //---			Definitions of global fncs:			---//
@@ -134,7 +139,45 @@ void launchBc(int argc, char* argv[])
 
 	//  II.  Attempt to launch 'bc'
 	//  YOUR CODE HERE (see (3))
-
+	if (pipe(pfd) < 0 || pipe(cfd) < 0)
+	{
+		fprintf(stderr,"pipe() failed: %s\n",strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	
+	pid_t cPid = fork();
+	
+	if (cPid < 0) 
+	{
+		fprintf(stderr,"fork() failed: %s\n",strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	
+	if (cPid == 0) 
+	{
+		close(pfd[0]);
+		close(cfd[1]);
+		
+		dup2(pfd[1], STDOUT_FILENO);
+		dup2(cfd[0], STDIN_FILENO);
+		
+		if (argc >= 2)
+		{
+			execl(argv[1], argv[1], CALC_ARG1, NULL);
+			fprintf(stderr,"Cannot execl(): %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		} else 
+		{
+			execl(DEFAULT_CALC_PROGRAM,DEFAULT_CALC_PROGRAM,CALC_ARG1,NULL));
+			fprintf(stderr,"Cannot execl():	%s\n",strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		close(pfd[1]);
+		close(cfd[0]);
+	}
+}
+		
 	//  III.  Finished: 
 }
 
@@ -191,8 +234,9 @@ void calculate	(const char* outputBufferPtr, const char* endTextPtr)
 
   	//  See (4)
   	//  YOUR CODE HERE TO SEND endTextPtr-outputBufferPtr BYTES POINTED TO BY outputBufferPtr
+	write(cfd[1], outputBufferPtr, (endTextPtr-outputBufferPtr));
 	alarm(1);
-  	numBytes	= 0; // CHANGE THAT 0.
+  	numBytes	= read(pfd[0], inputBuffer, BUFFER_LEN); // CHANGE THAT 0.
 					 // YOUR CODE HERE TO RECEIVE RESPONSE INTO inputBuffer[]
   	alarm(0);
 
@@ -293,6 +337,7 @@ void* type (void* vPtr)
 	saveLine(&bufferLen,&bufferPtr,&endTextPtr,&endBufferPtr,line,index);
 	free(bufferPtr);
 	//  YOUR CODE HERE TO TELL THE bc PROCESS TO END ITSELF, see (5)
+	write(cfd[1], BC_QUIT_CMD, sizeof(BC_QUIT_CMD));
 	return(NULL);
 }
 
@@ -317,6 +362,20 @@ void offNCurses()
 int main (int argc, char* argv[])
 {
 	//  YOUR CODE HERE (see (2))
+	
+	struct sigaction cSignal;
+	
+	memset(&cSignal, '\0', sizeof(cSignal));
+	cSignal.sa_flags = 0;
+	cSignal.sa_handler = sigChildHandler;
+	sigaction(SIGCHLD, &cSignal, NULL);
+
+	struct sigaction alarmSignal;
+
+	memset(&alarmSignal, '\0', sizeof(alarmSignal));
+	alarmSignal.sa_flags = 0;
+	alarmSignal.sa_handler = sigAlarmHandler;
+	sigaction(SIGALRM, &alarmSignal, NULL);
 
 	onNCurses();
 	launchBc(argc,argv);
