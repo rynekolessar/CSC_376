@@ -18,7 +18,7 @@ unsigned long long ourhtnll (unsigned long long ull)
 		unsigned int  tmp = htonl(ptr[0]);
 		
 		ptr[0] = htonl(ptr[1]);
-		ptr[1] = htonl(tmp);
+		ptr[1] = tmp;
 	}
 
 	return(ull);

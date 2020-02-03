@@ -134,6 +134,12 @@ void launchBc(int argc, char* argv[])
 
 	//  II.  Attempt to launch 'bc'
 	//  YOUR CODE HERE (see (3))
+	if(argc > 2)
+	{
+		execl(argv[1], CALC_ARG1, NULL);
+	} else {
+		execl(DEFAULT_CALC_PROGRAM, DEFAULT_CALC_PROGRAM, CALC_ARG1, NULL);
+	}
 
 	//  III.  Finished: 
 }
@@ -159,7 +165,7 @@ void saveLine	(size_t*		bufferLenPtr,
 	//  II.A.  Allocate more space if needed:
 	if  (lineIndex >= (*endBufferPtrPtr - *endTextPtrPtr + 1) )
 	{
-		size_t	textLen	 	= *endTextPtrPtr - *bufferPtrPtr;
+		size_t	textLen	 	 = *endTextPtrPtr - *bufferPtrPtr;
 
 		(*bufferLenPtr)		*= 2;
 		(*bufferPtrPtr)	 	 = (char*)realloc(*bufferPtrPtr,*bufferLenPtr);
