@@ -1,0 +1,22 @@
+$ countWordsInSite <url> <linkDepth>
+
+	launchHunspell()
+	{
+		
+	}
+	
+	wordCount(url)
+	{
+		// get text
+		// count words (using hunspell or apsell)
+		
+		// get links
+	}
+
+
+Steps for C portion of C/Java combined Assignment #3:
+(1) Get Command line args
+(2) Set-up the socket-pairs/pipes
+(3) Start hunspell
+(4) Start java
+(5) wait() for Java to finish, kill(SIGINT) the hunspell process (pid)
