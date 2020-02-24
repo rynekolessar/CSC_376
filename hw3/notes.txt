@@ -1,6 +1,6 @@
 $ countWordsInSite <url> <linkDepth>
 
-	launchHunspell()
+	void launchHunspell()
 	{
 		
 	}
@@ -14,9 +14,92 @@ $ countWordsInSite <url> <linkDepth>
 	}
 
 
+//////////////////////////////////////////////////////////////////////////////////////
+
+
 Steps for C portion of C/Java combined Assignment #3:
 (1) Get Command line args
 (2) Set-up the socket-pairs/pipes
 (3) Start hunspell
 (4) Start java
 (5) wait() for Java to finish, kill(SIGINT) the hunspell process (pid)
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+pid_t launchHunspell(int* toHunspell, int* toUrlVisitor) 
+{
+	pid_t childId = fork();
+
+	if (childId < 0) 
+	{
+		// Complain
+	}
+
+	if (childId == 0)
+	{
+		close(toHunspell[1]);		
+		dup2(toHunspell[0],STDIN_FILENO);
+		
+		close(toUrlVisitor[0]);
+		dup2(toUrlVisitor[1],STDOUT_FILENO);
+
+		execl("usr/bin/hunspell", "Hunspell", "-a", "-d", "en_US", NULL);
+		fprintf(stderr, "Cannot find /usr/bin/hunspell\n");
+		exit(EXIT_FAILURE);
+	}
+
+	close(toHunspell[0]);
+	close(toUrlVisited[0]);
+
+	return(chilId);
+}
+
+// toHunspell == &toHunspell[0]
+
+pid_t launchUrlVisitor(int* toHunspell, int* toUrlVisitor) 
+{
+	pid_t childId = fork();
+
+	if (childId < 0) 
+	{
+		// Complain
+	}
+	if (childId == 0)
+	{
+		close(toHunspell[0]);		
+		dup2(toHunspell[1],STDOUT_FILENO); 
+		
+		close(toUrlVisitor[1]);
+		dup2(toUrlVisitor[0],STDIN_FILENO);
+	
+		execl("usr/bin/hunspell", "Hunspell", "-a", "-d", "en_US", NULL);
+		fprintf(stderr, "Cannot find /usr/bin/hunspell\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	close(toHunspell[0]);
+	close(toUrlVisited[0]);
+	
+	return(chilId);
+}
+
+
+int main ()
+{
+	int toHunspell[2];
+	int toUrlVisitor[2];
+
+	if ( (pipe(toHunspell) < 0) || (pipe(toUrlVisitor) < 0) )
+	{
+		fprintf(stderr, "pipe() error %s\n", strerrno(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	pid_t hunspellId = launchHunspell(toHunspell,toUrlVisitor);
+
+	wait(NULL);
+	kill(hunspellId,SIGINT)
+
+}
