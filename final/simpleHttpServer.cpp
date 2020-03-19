@@ -21,16 +21,16 @@
 #include <pthread.h>	// pthread_create()
 #include <signal.h>		// sigaction()
 #include <unistd.h>		// close()
-#include <sys/types.h>  // socket(), accept(), bind(), open()
+#include <sys/types.h>	// socket(), accept(), bind(), open()
 #include <sys/socket.h> //socket(),accept(),bind(),getaddrinfo()
-#include <sys/stat.h>   // open()
+#include <sys/stat.h>	// open()
 #include <fcntl.h>		// open()
 #include <wait.h>		// wait()
 #include <signal.h>		// sigaction()
 #include <netinet/in.h> // sockaddr_in, inet_ntoa()
 #include <netinet/ip.h> // sockaddr_in
 #include <netdb.h>		// getaddrinfo()
-#include <arpa/inet.h>  // inet_ntoa()
+#include <arpa/inet.h>	// inet_ntoa()
 #include <set>			// std::set
 #include <vector>		// std::vector
 #include <list>			// std::list
@@ -176,11 +176,11 @@ typedef enum
 } httpMethod_ty;
 
 const char *HTTP_METHOD_NAME_ARRAY[] = {
-	"GET",	// GET_HTTP_METH
-	"PUT",	// PUT_HTTP_METH
+	"GET",	  // GET_HTTP_METH
+	"PUT",	  // PUT_HTTP_METH
 	"DELETE", // DELETE_HTTP_METH
-	"POST",   // POST_HTTP_METH
-	"HEAD"	// HEAD_HTTP_METH
+	"POST",	  // POST_HTTP_METH
+	"HEAD"	  // HEAD_HTTP_METH
 };
 
 typedef enum
@@ -318,7 +318,7 @@ std::string waitForPrompt(int fromPythonFd)
 	char buffer[LINE_BUFFER_LEN];
 	int numBytes;
 
-	//  YOUR CODE HERE
+	//  TODO: YOUR CODE HERE
 	return ("CHANGE THIS");
 }
 
@@ -907,7 +907,8 @@ protected:
 	void endPython()
 	{
 		haveAskedPythonToQuit = true;
-		//  YOUR CODE HERE
+		//  TODO: YOUR CODE HERE
+		kill(END_PYTHON_CONST_CPTR[END_PYTHON_LEN]);
 	}
 
 public:
@@ -2886,8 +2887,39 @@ UserContent::UserContent(const char *filepathCPtr,
 		int toPythonArray[2];
 		int fromPythonArray[2];
 
-		//  YOUR CODE HERE TODO
+		//  TODO: YOUR CODE HERE
 
+		// creating two pipes:
+		if ( (pipe(toPythonArray) < 0) || (pipe(fromPythonArray) < 0) )
+		{
+			fprintf(stderr, "pipe() failed: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+
+		// fork() a child process:
+		pythonPid_ = fork(); 
+
+		if (pythonPid_ == 0) // Child process:
+		{
+			// Closing unneccessary fd's:
+			close(toPythonArray[1]);
+			dup2(toPythonArray[0], STDIN_FILENO);
+			close(fromPythonArray[0]);
+			dup2(fromPythonArray[1], STDOUT_FILENO);
+			//dup2() to get STDIN_FILENO from one pipe and send to the other
+			execl(pythonProgNameCPtr, "-u", NULL); // start python
+			fprintf(stderr, "Cannot run \"%s\".\n", pythonProgNameCPtr);
+			exit(EXIT_FAILURE);
+		}
+		// Parent Process:
+		// closing unneccessary fd's
+		// set toPythonFd_ and fromPythonFd_ to their appropriate values
+		toPythonFd_ = toPythonArray[1];
+		close(toPythonArray[0]);
+		fromPythonFd_ = fromPythonArray[0];
+		close(fromPythonArray[1]);
+
+		// wait for prompt from python
 		waitForPrompt(fromPythonFd_);
 	}
 
@@ -2895,7 +2927,11 @@ UserContent::UserContent(const char *filepathCPtr,
 	if (externalContentUrlCPtr != NULL)
 	{
 
-		//  YOUR CODE HERE
+		//  TODO: YOUR CODE HERE 
+		//  Not sure if this is right
+		curl_global_init(CURL_GLOBAL_ALL);
+		curl_easy_setopt(curlHandle_,externalContentUrlCPtr,WriteMemoryCallback)
+		curl_easy_setopt(curlHandle_, "libcurl-agent/1.0");
 	}
 
 	//  III.  Finished:
@@ -2911,8 +2947,10 @@ UserContent::~UserContent()
 	//  II.A.  End libcurl:
 	if (curlHandle_ != NULL)
 	{
-		//  YOUR CODE HERE
+		//  TODO: YOUR CODE HERE
 		curlHandle_ = NULL;
+		curl_easy_cleanup(curlHandle_);
+		curl_global_cleanup();
 	}
 
 	//  II.B.  Tell python to quit:
@@ -2924,6 +2962,8 @@ UserContent::~UserContent()
 			sleep(1);
 
 		pythonPid_ = -1;
+		// TODO: Make endPython() send END_PYTHON_CONST_CPTR of 
+		// length END_PYTHON_LEN to the Python process to end it
 	}
 
 	//  III.  Finished:
@@ -3518,9 +3558,9 @@ Page *PageStore::getPagePtr(Request &request,
 
 	if (strncmp(filePath, SYM_EVAL_PAGE_NAME, strlen(SYM_EVAL_PAGE_NAME)) == 0)
 	{
-		//  YOUR CODE HERE
+		//  TODO: YOUR CODE HERE
 
-		//  YOUR CODE HERE
+		//  TODO: YOUR CODE HERE
 	}
 	else if (strcmp(filePath, LOGIN_PAGE_NAME) == 0)
 	{
