@@ -20,3 +20,5 @@ while True :
     print(eval(expression))
   except SyntaxError :
     print("Syntax error")
+  except NameError :
+    print("Only use vars 'x', 'y' or 'z'")

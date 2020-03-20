@@ -1,0 +1,13 @@
+	std::string everything = "";
+	std::string returnMe = "";
+	do
+	{
+		numBytes = read(fromPythonFd, buffer, LINE_BUFFER_LEN);
+		buffer[numBytes] = '\0';
+		everything += buffer;
+	} while (everything.find(PYTHON_PROMPT) == std::string::npos);
+	{
+		int x = everything.find(PYTHON_PROMPT);
+		returnMe += everything.substr(0, x);
+		return (returnMe);
+	}

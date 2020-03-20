@@ -135,6 +135,7 @@ const int AUTOLOGOUT_TIME_SECS = 60 * 15;
 const int ASCTIME_BUFFER_LEN = 26; // From man pages
 const int R_PORT = 58384;
 const float CORREL_THRESHOLD = 0.5;
+
 #define SERVER_NAME "SOMWebServer"
 #define SERVER_VERSION "1.0"
 #define INDEX_PAGE_NAME "index.html"
@@ -147,6 +148,7 @@ const float CORREL_THRESHOLD = 0.5;
 #define BEGIN_TEMPLATE_VAR "<$"
 #define END_TEMPLATE_VAR "$>"
 #define USER_NAME_VAR "session.userName"
+
 const int NEW_CLIENT_BUFFER_LEN = 64;
 const int MIN_PORT_NUM = 1024;
 const int MAX_PORT_NUM = 65535;
@@ -318,19 +320,6 @@ std::string waitForPrompt(int fromPythonFd)
 	std::string totalBuffer;
 	char buffer[LINE_BUFFER_LEN];
 	int numBytes;
-
-	// std::string everything = "";
-	// std::string returnMe = "";
-	// do
-	// {
-	// 	numBytes = read(fromPythonFd, buffer, LINE_BUFFER_LEN);
-	// 	buffer[numBytes] = '\0';
-	// 	everything += buffer;
-	// } while (everything.find(PYTHON_PROMPT) == std::string::npos);
-
-	// int x = everything.find(PYTHON_PROMPT);
-	// returnMe += everything.substr(0, x);
-	// return (returnMe);
 
 	totalBuffer = read(fromPythonFd, buffer, numBytes);
 	std::string toReturn = totalBuffer.substr(0, totalBuffer.size() - PYTHON_PROMPT_LEN);
