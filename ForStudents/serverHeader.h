@@ -1,0 +1,511 @@
+/*-------------------------------------------------------------------------*
+ *---									---*
+ *---		serverHeaders.h						---*
+ *---									---*
+ *---	    This file ties together the headers needed for the		---*
+ *---	simpleWebServer.						---*
+ *---									---*
+ *---		This is a declassified version of an original		---*
+ *---			CONFIDENTIAL source file owned by:		---*
+ *---			Applied Philosophy of Science			---*
+ *---									---*
+ *---	----	----	----	----	----	----	----	----	---*
+ *---									---*
+ *---	Version 2		2019 October 22		Joseph Phillips	---*
+ *---									---*
+ *-------------------------------------------------------------------------*/
+
+#include	<stdlib.h>
+#include	<stdio.h>
+#include	<string.h>
+#include	<string>
+#include	<errno.h>		// errno
+#include	<pthread.h>		// pthread_create()
+#include	<signal.h>		// sigaction()
+#include	<unistd.h>		// close()
+#include	<sys/types.h>		// socket(), accept(), bind(), open()
+#include	<sys/socket.h>		//socket(),accept(),bind(),getaddrinfo()
+#include	<sys/stat.h>		// open()
+#include	<fcntl.h>		// open()
+#include	<netinet/in.h>		// sockaddr_in, inet_ntoa()
+#include	<netinet/ip.h>		// sockaddr_in
+#include	<netdb.h>		// getaddrinfo()
+#include	<arpa/inet.h>		// inet_ntoa()
+#include	<set>			// std::set
+#include	<vector>		// std::vector
+#include	<list>			// std::list
+#include	<map>			// std::map
+
+
+//  PURPOSE:  To define an array of hexadecimal digits in order.
+#define		HEXADIGIT_ARRAY		"0123456789ABCDEF"
+
+
+const int	ERROR_PORT			= -1;
+
+const int	ERROR_FILE_DESCRIPTOR		= -1;
+
+const char	QUOTE_CHAR			= 0x22;
+
+#define		QUOTE_STRING			"\""
+
+#define		DIRECTORY_SEPARATORY_STR	"/"
+
+const char	HOME_DIRECTORY_CHAR		= '~';
+
+#define		CURRENT_DIRECTORY_STR		"."
+
+const size_t	CURRENT_DIRECTORY_LEN		=
+      		sizeof(CURRENT_DIRECTORY_STR) - 1;
+
+#define		CURRENT_DIRECTORY_PATH_STR	CURRENT_DIRECTORY_STR	\
+						DIRECTORY_SEPARATORY_STR
+
+const size_t	CURRENT_DIRECTORY_PATH_LEN
+					= sizeof(CURRENT_DIRECTORY_PATH_STR)-1;
+
+#define		PARENT_DIRECTORY_STR		".."
+
+const size_t	PARENT_DIRECTORY_LEN		=
+      		sizeof(PARENT_DIRECTORY_STR) - 1;
+
+#define		PARENT_DIRECTORY_PATH_STR	PARENT_DIRECTORY_STR	\
+						DIRECTORY_SEPARATORY_STR
+
+const size_t	PARENT_DIRECTORY_PATH_LEN
+				= sizeof(PARENT_DIRECTORY_PATH_STR)-1;
+
+//  PURPOSE:  To tell the beginning JSON brace
+const	char	BEGIN_JSON_BRACE= '{';
+
+//  PURPOSE:  To tell the ending JSON brace
+const	char	END_JSON_BRACE	= '}';
+
+//  PURPOSE:  To tell the beginning JSON array
+const	char	BEGIN_JSON_ARRAY= '[';
+
+//  PURPOSE:  To tell the ending JSON array
+const	char	END_JSON_ARRAY	= ']';
+
+//  PURPOSE:  To tell the ending JSON separator
+const	char	JSON_SEPARATOR	= ',';
+
+//  PURPOSE:  To tell the ending JSON mapping char
+const	char	JSON_MAPPER	= ':';
+
+#define		JSON_TYPE_KEY			"type"
+
+#define		SOM_ERROR_MSG_JSON_TYPE_VALUE	"SOM error"
+
+#define		JSON_MESSAGE_KEY		"message"
+
+
+//  PURPOSE:  To tell the maximum number of requests that can be queued
+//	  to the socket waiting for the server to respond.
+const int	MAX_NUM_WAITING_CLIENTS		= 32;
+
+
+#define		LOOPBACK_IP_ADDRESS_STR		"127.0.0.1"
+
+
+/*---								---*
+ *								   *
+ *	    Code for basic type definition.			   *
+ *								   *
+ *---								---*/
+
+//  PURPOSE:  To represent a 3-valued verbose enumerated type.
+typedef	enum
+	{
+	  OFF_VERBOSE,
+	  MEDIUM_VERBOSE,
+	  DEBUGGING_VERBOSE,
+
+	  LO_VERBOSE		= OFF_VERBOSE,
+	  DEFAULT_VERBOSE	= MEDIUM_VERBOSE,
+	  HI_VERBOSE		= DEBUGGING_VERBOSE
+	}
+	verbose_ty;
+
+//  PURPOSE:  To represent the data-types used by the content.
+typedef enum
+	{
+	  INTEGER_DT,
+	  FLOAT_DT,
+	  BOOLEAN_DT,
+	  STRING_DT,
+
+	  LO_DT		= INTEGER_DT,
+	  HI_DT		= STRING_DT
+	}
+	contentDataType_ty;
+
+//  PURPOSE:  To tell the names of the values of 'contentDataType_ty'.
+extern
+const char*	CONTENT_DATA_TYPE_NAME_ARRAY[];
+
+
+//  PURPOSE:  To represent the HTTP client-to-server methods.
+typedef	enum
+	{
+	  BAD_HTTP_METH		= -1,
+	  GET_HTTP_METH,
+	  PUT_HTTP_METH,
+	  DELETE_HTTP_METH,
+	  POST_HTTP_METH,
+	  HEAD_HTTP_METH,
+
+	  NUM_HTTP_METH
+	}
+	httpMethod_ty;
+
+//  PURPOSE:  To tell the names of the values of 'httpMethod_ty'.
+extern
+const char*	HTTP_METHOD_NAME_ARRAY[];
+
+
+//  PURPOSE:  To represent the HTTP server-to-client return codes.
+typedef	enum
+	{
+	  OK_HTTP_RET_CODE			= 200,
+	  BAD_REQUEST_HTTP_RET_CODE		= 400,
+	  UNAUTHORIZED_HTTP_RET_CODE		= 401,
+	  FORBIDDEN_HTTP_RET_CODE		= 403,
+	  NOT_FOUND_HTTP_RET_CODE		= 404,
+	  METHOD_NOT_ALLOWED_HTTP_RET_CODE	= 405
+	}
+	httpReturnCode_ty;
+
+
+//  PURPOSE:  To represent what type of process is running this server code.
+typedef	enum
+	{
+	  HTTP_SERVER_PROCESS,
+	  SOM_SERVER_PROCESS,
+	  SOM_CLIENT_PROCESS
+      	}
+	serverProcess_ty;
+
+
+//  PURPOSE:  To represent the type of "Page" that is requested by a user.
+typedef	enum
+	{
+	  FILE_PAGE,	// Page is file (including templates
+	  		//  expansions and compile-time fixed text)
+	  API_PAGE	// Page is generated by running a function,
+	  		//  querying a process, etc.
+	}
+	page_ty;
+
+
+//---								---//
+//								   //
+//	    Code for definition of constants.			   //
+//								   //
+//---								---//
+
+const int	NEW_CLIENT_BUFFER_LEN	= 64;
+
+//  PURPOSE:  To tell how many client-handling threads there should be.
+const int	NUM_CLIENT_HANDLING_THREADS	= 8;
+
+//  PURPOSE:  To hold the maximum possible value for
+//	'_maxNumSimultaneousSOMClients', which tells the maximum
+//	possible number of clients that may be simultaneously served.
+const unsigned int
+		MAX_MAX_NUM_SIMULTANEOUS_SOM_CLIENTS
+						= 256;
+
+//  PURPOSE:  To define the SECONDS portion of time before the
+//	session server process times out while accept()-ing
+//	(and checks if should still run).
+const unsigned int
+		PORT_LISTENING_TIMEOUT_SECS	= 1;
+
+
+//  PURPOSE:  To define the MICROSECONDS portion of time before the
+//	session interface process times out while accept()-ing
+//	(and checks if should still run).
+const unsigned int
+		PORT_LISTENING_TIMEOUT_MICROSECS= 0;
+
+//  PURPOSE:  To tell the minimum legal port number.
+const int	MIN_LEGAL_PORT			= 1024;
+
+//  PURPOSE:  To tell the maximum legal port number.
+const int	MAX_LEGAL_PORT			= 65535;
+
+
+//  PURPOSE:  To specify the default maximum number of times to restart
+//	a SOM program other than the SOM server or SOM client-handling
+//	processes.
+const unsigned int
+		DEFAULT_MAX_PROGRAM_RESTART_TIMES	= 256;
+
+const int	DEFAULT_HTTP_PORT			= 8080;
+
+#define		DEFAULT_CONTENT_FILEPATH_STR_CONST	"content.conf"
+
+const int	MAX_TINY_ARRAY_LEN	= 256;
+
+const int	FILE_BUFFER_LEN		= 64 * 1024;
+
+const int	LINE_BUFFER_LEN		= 4096;
+
+const char	BETWEEN_COOKIE_SEPARATORY_CHAR	= ';';
+
+
+#define	SERVER_NAME		"SOMWebServer"
+#define	SERVER_VERSION		"1.0"
+#define	INDEX_PAGE_NAME		"index.html"
+#define	IMPLICIT_INDEX_URL	"/"
+#define	EXPLICIT_INDEX_URL	DIRECTORY_SEPARATORY_STR INDEX_PAGE_NAME
+#define	DEFAULT_MIME_FORMAT	"text/html"
+#define	SIMPLE_WEB_TEMPLATE_EXT	".swt"
+#define	COOKIE_HEADER_TEXT	"Cookie:"
+#define	SESSION_COOKIE_NAME	"session"
+#define	BEGIN_TEMPLATE_VAR	"<$"
+#define	END_TEMPLATE_VAR	"$>"
+#define	USER_NAME_VAR		"session.userName"
+      #define	EMAIL_ADDRESS_VAR	"session.emailAddress"
+      #define	PASSWORD_VAR		"session.password"
+      #define	USER_IMAGE_FILENAME_VAR	"session.userImageFilename"
+      #define	FIRST_NAME_VAR		"session.firstName"
+      #define	LAST_NAME_VAR		"session.lastName"
+      #define	AFFILIATION_VAR		"session.affiliation"
+      #define	FIELD_OF_INTEREST_VAR	"session.fieldOfInterest"
+      #define	PERSONAL_STATEMENT_VAR	"session.personalStatement"
+      #define	MESSAGE_VAR		"session.message"
+      #define	SESSION_URI_SUBPATH	"Session/"
+      #define	USER_URI_SUBPATH	"User/"
+      #define	API_URI_SUBPATH0	"API/"
+      #define	API_URI_SUBPATH1	"api/"
+      #define	STD_PROPS_PAGE_URI_SUBPATH	\
+				JSON_SOM_CMD_KEY_STD_PROPERTIES_VALUE "/"
+      #define	NAV_PAGE_URI_SUBPATH	JSON_SOM_CMD_KEY_NAVIGATION_VALUE "/"
+
+const int	NUM_OS_TRIES		= 256;
+const char	QUERY_CHAR		= '?';
+const char	FRAGMENT_CHAR		= '#';
+const char	QUERY_ASSIGNMENT_CHAR	= '=';
+const char	QUERY_SEGMENT_CHAR	= '&';
+const char	QUERY_HEX_ESCAPE_CHAR	= '%';
+const char	QUERY_SPACE_CHAR	= '+';
+const int	COOKIE_LEN		= 32;
+const int	SESSION_NAME_LEN	= 32;
+const int		AUTOLOGOUT_TIME_SECS	= 60 * 15;
+const int		ASCTIME_BUFFER_LEN	= 26;	// From man pages
+
+//  PURPOSE:  To tell the default directory permissions to use.
+const int	DEFAULT_UNIX_DIR_PERMISSIONS	= S_IRWXU | S_IRGRP | S_IXGRP;
+
+//  PURPOSE:  To tell the default file permissions to use.
+const int	DEFAULT_UNIX_FILE_PERMISSIONS	= S_IRUSR | S_IWUSR | S_IRGRP;
+
+//  PURPOSE:  To tell the OS group with whih files are associated.
+#define	OS_USER_GROUP_NAME_CSTR		"scienceomatic"
+
+
+#define	WITH_COOKIE_HEADER_TEMPLATE				\
+	"HTTP/1.0 %d %s\r\n"					\
+	"Server: " SERVER_NAME "/" SERVER_VERSION "\r\n"	\
+	"Content-Type: %s\r\n"					\
+	"Content-Length: %zu\r\n"				\
+	"Set-Cookie: %s=%s\r\n"					\
+	"Date: %s"						\
+	"\r\n"
+
+#define	WITH_EXPIRED_COOKIE_HEADER_TEMPLATE			\
+	"HTTP/1.0 %d %s\r\n"					\
+	"Server: " SERVER_NAME "/" SERVER_VERSION "\r\n"	\
+	"Content-Type: %s\r\n"					\
+	"Content-Length: %zu\r\n"				\
+	"Set-Cookie: %s=; expires=Thu, 01 Jan 1970 00:00:00 GMT\r\n" \
+	"Date: %s"						\
+	"\r\n"
+
+#define	WITHOUT_COOKIE_HEADER_TEMPLATE				\
+	"HTTP/1.0 %d %s\r\n"					\
+	"Server: " SERVER_NAME "/" SERVER_VERSION "\r\n"	\
+	"Content-Type: %s\r\n"					\
+	"Content-Length: %zu\r\n"				\
+	"Date: %s"						\
+	"\r\n"
+
+
+//----	    SOM server related constants:		----//
+//  PURPOSE:  To tell the max. number of SOM children that can be
+//	simultaneously handled by a SOM server process.
+const int	MAX_NUM_CLIENTS	= 16;
+
+
+      //----	    SOM server related constants:		----//
+      //  PURPOSE:  To tell the path (minus leading "API/") that the browser
+      //	uses to request a listing of the knowledge bases a given user
+      //	is allowed to see.
+      #define	LIST_KBS_API_PATH	"kbSearch/list"
+
+      //  PURPOSE:  To tell the path (minus leading "API/") that the browser
+      //	uses to request the calling of a SOM function.  The actual
+      //	function is given in the query string.  To do the SOM method
+      //	call:
+      //
+      //		obj->meth(0,"Hello");
+      //
+      //	Use the query string:
+      //
+      //		?subject=obj&method=meth&arg0=0&arg1="Hello"
+      //
+      //	/OR/
+      //
+      //	Put SOM code in POST body:
+      #define	CALL_SOM_FNC_API_PATH	"kb/"
+
+
+/*--								---*
+ *								   *
+ *	externs of functions for use thru-out server code:	   *
+ *								   *
+ *---								---*/
+
+//  PURPOSE:  To return 'true' if this process should run, or 'false'
+//	otherwise.  No parameters.
+extern
+bool		getShouldRun	();
+
+
+//  PURPOSE:  To note that this process should no longer run.  No parameters.
+//	No return value.
+extern
+void		clearShouldRun	();
+
+
+//  PURPOSE:  To return the verbosity value.  No parameters.
+extern
+verbose_ty	getVerbosity	();
+
+
+//  PURPOSE:  To return a random integer in a thread-safe fashion.  No
+//	parameters.
+extern
+int		safeRand	();
+
+
+//  PURPOSE:  To be an alternative to 'strncpy()' that does not fill all
+//	unused bytes with '\0', only the one after the last char, or the very
+//	last byte position in the whole array.
+//
+//	If 'size' == '0' then this does nothing but return '0'.
+//
+//	If 'size' > '0' then copies up to 'size-1' chars from 'src' to 'dest'
+//	and NUL-terminates at either position 'dest[size-1]', or before if
+//	'dest' ends before 'size-1'.  Returns number of bytes copied, not
+//	including NUL-char.
+//
+//	NOTE:  Use strncpy() instead in security circumstances where want
+//	       the rest of the string NUL-ed out.
+extern
+size_t		strlcpy		(char*		dest,
+				 const char*	src,
+				 size_t		size
+				);
+
+//  PURPOSE:  To return the value of hexadecimal digit 'hexDigit'.
+//	NOTE: Assumes 'isxdigit(hexDigit)' returns non-0.
+extern
+int		hexDigitValue	(char	hexDigit
+				);
+
+//  PURPOSE:  To return which ever of 'run0' and 'run1' comes earlier.
+extern
+const char*	firstCPtr	(const char*	run0,
+				 const char*	run1
+				);
+
+//  PURPOSE:  To return a JSON string representation of the C-string pointed
+//	to by 'cPtr', where all chars that are represented by escape sequences
+//	are represented by escape sequences, and the string is wrapped with
+//	double-quotes.
+extern
+std::string	stringToJSONString
+				(const char*	cPtr
+				);
+
+//  PURPOSE:  To return a string giving error message 'errorMsgCPtr' as a
+//	JSON string parsable into a SomMsg instance.  Converts 'errorMsgCPtr'
+//	into the escape sequences required by JSON strings, and wraps them
+//	in double-quotes.
+extern
+std::string	jsonStrErrorMsg	(const char*	errorMsgCPtr
+				);
+
+//  PURPOSE:  To attempt to set 'value' to the URL query fragment
+//	pointed to by 'cPtr'.  Advances 'cPtr' passed query fragment.
+//	Returns 'true' if successful or 'false' otherwise.
+extern
+bool		didTranslateUrlCPtr
+				(std::string&	value,
+				 const char*&	cPtr
+				);
+
+//  PURPOSE:  To return the 'httpMethod_ty' value whose name is pointed to
+//	by 'methodNameCPtr', or 'BAD_HTTP_METH' if no match is found.
+extern
+httpMethod_ty	getHttpMethod	(const char*	methodNameCPtr
+				);
+
+
+//  PURPOSE:  To
+extern
+const char*	getReturnCodeCPtr
+				(httpReturnCode_ty	returnCode
+				);
+
+//  PURPOSE:  To return 'true' if 'source' begins with substring
+//	'beginning' (ignoring case), or 'false' otherwise.
+extern
+bool		beginsWith	(const char*	source,
+				 const char*	beginning
+				);
+
+//  PURPOSE:  To return 'true' if 'source' ends with substring 'ending'
+//	(ignoring case), or 'false' otherwise.
+extern
+bool		endsWith	(const char*	source,
+				 const char*	ending
+				);
+
+
+//  PURPOSE:  To return 'true' if 'filepathCPtr' has an extension
+//	implying that it is a static file (as opposed to a program or
+//	 template), or to return 'false' otherwise.
+extern
+bool		appearsToBeStaticFile
+				(const char*	filepathCPtr
+				);
+
+
+//  PURPOSE:  To return the address of text telling the name of the guess
+//	of the MIME format of a file with path 'filepathCPtr' and with
+//	contents 'contentsCPtr'.
+extern
+const char*	getMimeGuess	(const char*	filepathCPtr,
+				 const char*	contentsCPtr
+				);
+
+#define		LOCK_FILENAME		"lock.txt"
+
+#include	"JSONValue.h"
+//#include	"Cookie.h"
+//#include	"User.h"
+//#include	"SessionStore.h"
+//#include	"UserContent.h"
+//#include	"RequestHeader.h"
+//#include	"Request.h"
+//#include	"Page.h"
+//#include	"PageStore.h"
+//#include	"NewClientBuffer.h"
+//#include	"InfoForListeningThread.h"
+//#include	"InfoForClientServingThread.h"
+
+

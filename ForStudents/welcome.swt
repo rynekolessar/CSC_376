@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html>
+ <head>
+  <title>Welcome <$ print(@firstName); $></title>
+ </head>
+ <body>
+  <h2>Welcome <$ print(@firstName); $></h2>
+  <p>
+    If you see this, congratulations!
+    You have logged in.
+  </p>
+  <p>
+   <form action="welcome.swt">
+     Low integer:  <input type="text" name="lo"/><br/>
+     High integer:  <input type="text" name="hi"/><br/>
+     <input type="submit" value="Submit"/><br/>
+   </form> 
+  </p>
+  <$
+    {
+      int	@lo;
+      int	@hi;
+
+      if  ( query[lo] == "" && query[hi] == "" )
+      {
+      }
+      else
+      if  ( didConvertToInt(@lo,query[lo]) && didConvertToInt(@hi,query[hi]) )
+      {
+	if  (@lo > @hi)
+	{
+	  int	@temp;
+
+	  @temp	= @lo;
+	  @lo	= @hi;
+	  @hi	= @temp;
+	}
+
+	int	@sum	= @lo;
+	int	@i;
+
+	for  (@i = @lo + 1;  @i <= @hi;  @i = @i + 1)
+	  @sum	= @sum + @i;
+
+	print("The sum from ");
+	print(@lo);
+	print(" to ");
+	print(@hi);
+	print(" = ");
+	print(@sum);
+      }
+      else
+      {
+	print("The two entries must be integers");
+      }
+
+    }
+  $>
+  <br/>
+ </body>
+</html>
