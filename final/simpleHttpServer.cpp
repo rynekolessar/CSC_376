@@ -319,6 +319,8 @@ std::string waitForPrompt(int fromPythonFd)
 	int numBytes;
 
 	//  TODO: YOUR CODE HERE
+	std::string response;
+
 	return ("CHANGE THIS");
 }
 
@@ -951,9 +953,13 @@ public:
 		printf("Attempt to evaluate \"%s\"\n\n",
 			   toEvalStr.c_str());
 
-		//  YOUR CODE HERE
+		//  TODO: YOUR CODE HERE
+		toEvalStr = toEvalStr + "\n";
+		// Send the C string in the C++ string to Python. In C++ you man access the
+		// C string in the C++ string toEvalStr by saying toEvalStr.c_str(). You may
+		// obtain it's length by saying toEvalStr.size()
 
-		return ("CHANGE THIS");
+		return (waitForPrompt());
 	}
 
 	//  PURPOSE:  To use libcurl handle 'curlHandle' to query the registered
@@ -2890,14 +2896,14 @@ UserContent::UserContent(const char *filepathCPtr,
 		//  TODO: YOUR CODE HERE
 
 		// creating two pipes:
-		if ( (pipe(toPythonArray) < 0) || (pipe(fromPythonArray) < 0) )
+		if ((pipe(toPythonArray) < 0) || (pipe(fromPythonArray) < 0))
 		{
 			fprintf(stderr, "pipe() failed: %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 
 		// fork() a child process:
-		pythonPid_ = fork(); 
+		pythonPid_ = fork();
 
 		if (pythonPid_ == 0) // Child process:
 		{
@@ -2907,7 +2913,7 @@ UserContent::UserContent(const char *filepathCPtr,
 			close(fromPythonArray[0]);
 			dup2(fromPythonArray[1], STDOUT_FILENO);
 			//dup2() to get STDIN_FILENO from one pipe and send to the other
-			execl(pythonProgNameCPtr, "-u", NULL); // start python
+			execl(pythonProgNameCPtr, pythonProgNameCPtr, "-u", NULL); // start python
 			fprintf(stderr, "Cannot run \"%s\".\n", pythonProgNameCPtr);
 			exit(EXIT_FAILURE);
 		}
@@ -2927,11 +2933,13 @@ UserContent::UserContent(const char *filepathCPtr,
 	if (externalContentUrlCPtr != NULL)
 	{
 
-		//  TODO: YOUR CODE HERE 
+		//  TODO: YOUR CODE HERE
 		//  Not sure if this is right
 		curl_global_init(CURL_GLOBAL_ALL);
-		curl_easy_setopt(curlHandle_,externalContentUrlCPtr,WriteMemoryCallback)
-		curl_easy_setopt(curlHandle_, "libcurl-agent/1.0");
+		curlHandle_ = curl_easy_init();
+		curl_easy_setopt(curlHandle_, CURLOPT_URL, externalContentUrlCPtr);
+		curl_easy_setopt(curlHandle_, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+		curl_easy_setopt(curlHandle_, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 	}
 
 	//  III.  Finished:
@@ -2962,7 +2970,7 @@ UserContent::~UserContent()
 			sleep(1);
 
 		pythonPid_ = -1;
-		// TODO: Make endPython() send END_PYTHON_CONST_CPTR of 
+		// TODO: Make endPython() send END_PYTHON_CONST_CPTR of
 		// length END_PYTHON_LEN to the Python process to end it
 	}
 
@@ -3559,6 +3567,20 @@ Page *PageStore::getPagePtr(Request &request,
 	if (strncmp(filePath, SYM_EVAL_PAGE_NAME, strlen(SYM_EVAL_PAGE_NAME)) == 0)
 	{
 		//  TODO: YOUR CODE HERE
+		std::map<std::string, std::string>::const_iterator found;
+
+		found = request.getQuery().find("toEvaluate");
+
+		if (found == request.getQuery().end())
+		{
+			// HAS NO VALUE
+			request.getQuery()["evaluation"] = "(error)";
+		}
+		else
+		{
+			// HAS VALUE
+			request.getQuery()["Evaluation"] = content.evalExpression(found->second);
+		}
 
 		//  TODO: YOUR CODE HERE
 	}
@@ -3719,7 +3741,7 @@ void showUsage(FILE *outFilePtr)
 int obtainListeningSocketFd(int port)
 {
 	// Create a socket
-	int socketDescriptor = socket(AF_INET,	 // AF_INET domain
+	int socketDescriptor = socket(AF_INET,	   // AF_INET domain
 								  SOCK_STREAM, // Reliable TCP
 								  0);
 
