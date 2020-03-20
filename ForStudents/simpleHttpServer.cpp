@@ -314,17 +314,26 @@ void sigChildHandler(int sigNum)
 //	'PYTHON_PROMPT'.
 std::string waitForPrompt(int fromPythonFd)
 {
+	// TODO: wait for prompt
 	std::string totalBuffer;
 	char buffer[LINE_BUFFER_LEN];
 	int numBytes;
 
-	//  TODO: Done
-	// Getting response from Python
+	// std::string everything = "";
+	// std::string returnMe = "";
+	// do
+	// {
+	// 	numBytes = read(fromPythonFd, buffer, LINE_BUFFER_LEN);
+	// 	buffer[numBytes] = '\0';
+	// 	everything += buffer;
+	// } while (everything.find(PYTHON_PROMPT) == std::string::npos);
+
+	// int x = everything.find(PYTHON_PROMPT);
+	// returnMe += everything.substr(0, x);
+	// return (returnMe);
+
 	totalBuffer = read(fromPythonFd, buffer, numBytes);
-
-	// stripping PYTHON_PROMPT of length PYTHON_PROMT_LEN from the end of the response
-	std::string toReturn = totalBuffer.substr(0, (totalBuffer.size() - PYTHON_PROMPT_LEN));
-
+	std::string toReturn = totalBuffer.substr(0, totalBuffer.size() - PYTHON_PROMPT_LEN);
 	return (toReturn);
 }
 
@@ -2961,7 +2970,7 @@ UserContent::UserContent(const char *filepathCPtr,
 			close(fromPythonArray[0]);
 			dup2(fromPythonArray[1], STDOUT_FILENO);
 			//dup2() to get STDIN_FILENO from one pipe and send to the other
-			execl("/home/linuxbrew/.linuxbrew/bin/python3", pythonProgNameCPtr, "-u", NULL); // start python
+			execl("/home/ryne/anaconda3/bin/python3", pythonProgNameCPtr, "-u", NULL); // start python
 			fprintf(stderr, "Cannot run \"%s\".\n", pythonProgNameCPtr);
 			exit(EXIT_FAILURE);
 		}
